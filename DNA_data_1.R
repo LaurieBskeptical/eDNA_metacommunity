@@ -2,6 +2,12 @@ library(readxl)
 library(mapview)
 library(sf)
 library(sp)
+library(magrittr)
+library(stringr)
+library(dplyr)
+############
+#eDNA data
+###########
 
 setwd('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/raw')
 
@@ -32,3 +38,26 @@ saint_francois_sf <- st_as_sf(x =saint_francois_env,
                           crs = "+proj=longlat +ellps=WGS84 +no_defs")
 
 mapview(saint_francois_sf)+chatauguay_sf
+
+##########
+#dam data
+#########
+
+dam_raw <-
+  read_excel(
+    'C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls'
+  )
+
+#deal with multiple headers
+no_name<-dam_raw%>%
+  select(matches('...[1:44]'))
+no_name_col<-colnames(no_name)
+
+(head_1<-read_excel('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls',col_names = TRUE)%>%
+    names()%>%
+    str_replace('...[1:44]',NA_character_))
+no_name<-dam_raw%>%
+   select(matches('...[1:44]'))
+
+colnames(plok)
+x<-colnames(plok)
