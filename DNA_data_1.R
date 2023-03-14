@@ -48,16 +48,25 @@ dam_raw <-
     'C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls'
   )
 
+
 #deal with multiple headers
-no_name<-dam_raw%>%
-  select(matches('...[1:44]'))
-no_name_col<-colnames(no_name)
+##first header
+head_1<-dam_raw
 
-(head_1<-read_excel('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls',col_names = TRUE)%>%
-    names()%>%
-    str_replace('...[1:44]',NA_character_))
-no_name<-dam_raw%>%
-   select(matches('...[1:44]'))
+names<-dam_raw%>% #select names that are in the header
+  select(matches(c('IDENTIFICATION','LOCALISATION','HYDROGRAPHIE','CARACTÉRISTIQUES','PROPRIÉTAIRE / MANDATAIRE','ÉVALUATION DE LA SÉCURITÉ')))
 
-colnames(plok)
-x<-colnames(plok)
+name_col<-colnames(names) 
+
+no_name<-select(dam_raw,-one_of(name_col))%>%colnames #select all the columns that have no name
+
+##replace vector of no names by NAs
+names(dam_raw)<-str_replace(names(dam_raw),paste(no_name,collapse = "|"),NA_character_)
+names(dam_raw)  
+
+##second header
+(head_2<-read_excel('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls',skip=1,col_names = TRUE)%>%
+    names()) #let's forst check the names
+
+
+  
