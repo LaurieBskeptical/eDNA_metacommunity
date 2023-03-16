@@ -4,3 +4,102 @@ output: html_document
 date: "2023-03-02"
 ---
 
+Load libraries 
+```{r message=FALSE, warning=FALSE}
+library(readxl)
+library(mapview)
+library(sf)
+library(magrittr)
+library(stringr)
+library(dplyr)
+library(janitor)
+```
+
+
+# Data
+
+## eDNA
+```{r}
+setwd('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/raw')
+
+```
+
+### Chatauguay
+
+Open data for the Chatauguay river. The third sheet will be used now since it represents the presence and absence of species without the number of DNA sequences obtained. 
+```{r}
+chatauguay_data<-read_excel('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/raw/Résultat_ADNe_Chatauguay_2021_.xlsx',sheet='présence_absence')
+chatauguay_df<-as.data.frame(chatauguay_data) 
+```
+
+Before building the community matrix we will plot where the data was taken. To do so, we remove the presence absence data to keep only coordinates and environmental variable. 
+
+Subset:
+```{r}
+chatauguay_env<-chatauguay_df[c(3:60),c(1:9)]
+```
+
+Make it a spatial object and plot it on a map.
+```{r}
+chatauguay_sf <- st_as_sf(x =chatauguay_env, 
+                        coords = c("Longitude","Latitude"),
+                        crs = "+proj=longlat +ellps=WGS84 +no_defs")
+
+mapview(chatauguay_sf)
+```
+
+### Saint-François
+
+Same steps as in Chatauguay River.
+```{r}
+saint_francois_data<-read_excel('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/raw/Résultat_ADNe_Saint-François_2021_.xlsx',sheet='présence_absence')
+saint_francois_df<-as.data.frame(saint_francois_data)
+
+#subset for only environmental data with coordinates
+saint_francois_env<-saint_francois_df[c(3:146),c(1:9)]
+
+#make it a spatial object
+saint_francois_sf <- st_as_sf(x =saint_francois_env, 
+                          coords = c("Longitude","Latitude"),
+                          crs = "+proj=longlat +ellps=WGS84 +no_defs")
+
+mapview(saint_francois_sf)+chatauguay_sf
+
+```
+
+## Dams
+
+```{r}
+setwd('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment')
+
+dam_raw <-
+  read_excel(
+    'C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls'
+  )
+
+```
+
+The head does not contain important column names, so I will set the first row in the data frame as the header. 
+```{r}
+dam<-janitor::row_to_names(dam_raw, 1, remove_rows_above = FALSE) 
+dam<-as.data.frame(dam) #turn into df
+```
+I want to make it a spatial object but one dam does not contain latitude ond longitude data. I decided to remove this dam of the dataset. 
+```{r}
+dam_na<-dam[!is.na(dam$`Latitude (NAD 83)`),]
+```
+With the NA removed I can now make it a spatial object and plot it on a map. 
+```{r}
+dam_sf<- st_as_sf(x =dam_na, 
+                          coords = c("Longitude (NAD 83)","Latitude (NAD 83)"),
+                          crs = "+init=epsg:4269 +proj=longlat +ellps=GRS80 +datum=NAD83
++no_defs +towgs84=0,0,0
+") 
+
+mapview(dam_sf)
+```
+
+
+
+
+
