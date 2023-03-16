@@ -1,10 +1,12 @@
 library(readxl)
 library(mapview)
 library(sf)
-library(sp)
 library(magrittr)
 library(stringr)
 library(dplyr)
+library(janitor)
+library(rgdal)
+
 ############
 #eDNA data
 ###########
@@ -43,35 +45,45 @@ mapview(saint_francois_sf)+chatauguay_sf
 #dam data
 #########
 
+setwd('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment')
+
 dam_raw <-
   read_excel(
     'C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls'
   )
 
+#Set first row as column names
+dam<-janitor::row_to_names(dam_raw, 1, remove_rows_above = FALSE) 
+dam<-as.data.frame(dam) #turn into df
 
-#deal with multiple headers
-##first header
-head_1<-dam_raw
+#remove NA from coords columns
+dam_na<-dam[!is.na(dam$`Latitude (NAD 83)`),]
+# sum(is.na(dam_na$`Latitude (NAD 83)`)) #it worked
 
-names<-dam_raw%>% #select names that are in the header
-  select(matches(c('IDENTIFICATION','LOCALISATION','HYDROGRAPHIE','CARACTÉRISTIQUES','PROPRIÉTAIRE / MANDATAIRE','ÉVALUATION DE LA SÉCURITÉ')))
+#make it a spatial object
+dam_sf<- st_as_sf(x =dam_na, 
+                          coords = c("Longitude (NAD 83)","Latitude (NAD 83)"),
+                          crs = "+init=epsg:4269 +proj=longlat +ellps=GRS80 +datum=NAD83
++no_defs +towgs84=0,0,0
+") 
 
-name_col<-colnames(names) 
-
-no_name<-select(dam_raw,-one_of(name_col))%>%colnames #select all the columns that have no name
-
-##replace vector of no names by NAs
-names(dam_raw)<-str_replace(names(dam_raw),paste(no_name,collapse = "|"),NA_character_)
-names(dam_raw)  
-
-##second header
-(head_2<-read_excel('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls',skip=1,col_names = TRUE)%>%
-    names()) #let's forst check the names
+mapview(dam_sf)
 
 
+mapview(saint_francois_sf,col.regions='red')+dam_sf
 
+#hydrography
+##for saint-francois river
+hydro_stf<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AF_GRP.gdb')
 
+##for chateauguay river
+hydro_chat<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AB.gdb')
 
+mapview(list(hydro_stf,saint_francois_sf),col.regions=list('blue','red'))
+   
+#unites de decoupage
+hydro_cut<-st_read('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/decoupage')
+hydro_03<-hydro_cut[hydro_cut$Bloc=='03',]
 
-
-  
+ mapview(hydro_03)
+ 

@@ -70,7 +70,6 @@ mapview(saint_francois_sf)+chatauguay_sf
 ## Dams
 
 ```{r}
-setwd('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment')
 
 dam_raw <-
   read_excel(
@@ -99,6 +98,19 @@ dam_sf<- st_as_sf(x =dam_na,
 mapview(dam_sf)
 ```
 
+This data set represents dams in the whole province. I will use the zones delinieated by the government of Quebec to select the dams that are present in the zone where our rivers can be found. The shapefile of these zones can be found here : https://www.donneesquebec.ca/recherche/dataset/grhq . The whole hydrography can be downloaded here: https://mrnf.gouv.qc.ca/repertoire-geographique/reseau-hydrographique-grhq/ . 
+
+```{r}
+hydro_cut<-st_read('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/decoupage')
+
+mapview(list(hydro_cut,saint_francois_sf,chatauguay_sf),col.regions=list('red','blue','blue'))
+
+```
+All the sampling was done in zone 03 which represents ID 1. I will then subset to only have a polygon of zone 3.
+```{r}
+hydro_03<-hydro_cut[hydro_cut$Bloc=='03',]
+
+```
 
 
 
