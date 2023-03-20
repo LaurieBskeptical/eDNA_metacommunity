@@ -67,10 +67,10 @@ dam_sf<- st_as_sf(x =dam_na,
 +no_defs +towgs84=0,0,0
 ") 
 
-mapview(dam_sf)
+#mapview(dam_sf)
 
 
-mapview(saint_francois_sf,col.regions='red')+dam_sf
+#mapview(saint_francois_sf,col.regions='red')+dam_sf
 
 #hydrography
 ##for saint-francois river
@@ -79,11 +79,21 @@ hydro_stf<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de mai
 ##for chateauguay river
 hydro_chat<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AB.gdb')
 
-mapview(list(hydro_stf,saint_francois_sf),col.regions=list('blue','red'))
+mapview(list(hydro_stf,saint_francois_sf,dam_zone),col.regions=list('blue','red','green'))
    
 #unites de decoupage
 hydro_cut<-st_read('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/decoupage')
 hydro_03<-hydro_cut[hydro_cut$Bloc=='03',]
 
- mapview(hydro_03)
- 
+#mapview(hydro_03)
+
+#cut dams out of the hydro zone
+##check projection
+st_crs(dam_sf) #not the same so transform to WGS84
+st_crs(hydro_03)
+
+dam_crs<-st_transform(dam_sf,4326)
+hydro_03_crs<-st_transform(hydro_03,4326)
+
+dam_zone<-st_intersection(dam_crs,hydro_03_crs)
+#mapview(dam_zone) #it works

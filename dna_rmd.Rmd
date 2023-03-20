@@ -111,6 +111,13 @@ All the sampling was done in zone 03 which represents ID 1. I will then subset t
 hydro_03<-hydro_cut[hydro_cut$Bloc=='03',]
 
 ```
+Use this zone to cut the dams. 
+```{r}
+dam_crs<-st_transform(dam_sf,4326)
+hydro_03_crs<-st_transform(hydro_03,4326)
+
+dam_zone<-st_intersection(dam_crs,hydro_03_crs)
+```
 
 
 
