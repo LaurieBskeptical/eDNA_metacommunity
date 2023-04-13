@@ -36,47 +36,30 @@ chatau_comm_sf <- st_as_sf(x =chatauguay_df[c(3:60),c(2,3,10:50)],
                           crs = "+proj=longlat +ellps=WGS84 +no_defs")
 
 #calculate Jaccards Index of similarity
-chatau_comm<-st_drop_geometry(chatau_comm_sf)
 
-chatau_vec<-as.vector(chatau_comm)
+similarity<-function(community_matrix){
+  ##TRANSFORM COMMUNITY DATA
+  comm<-st_drop_geometry(community_matrix) #drop sf from community matrix
+  vec<-as.vector(comm) 
+  mat<-do.call(cbind,vec) #bind all species columns together
+  class(mat)<-'numeric'
+  ##CALCULATE JACCARD SIMILARITY INDICE
+  a <- mat %*% t(mat)
+  b <- mat %*% (1 - t(mat))
+  c <- (1 - mat) %*% t(mat)
+  d <- ncol(mat) - a - b - c
+  
+  simi = a / (a+b+c)
+  
+  diag(simi) = 0
+  col<-rowSums(simi)
+  comm_sim<-cbind(community_matrix,col)
+  
+  return(comm_sim)
+}
 
-mat_chatau<-do.call(cbind,chatau_vec)
-
-class(mat_chatau)<-'numeric'
-
-chatau_jacc<-vegdist(mat_chatau,'jac',binary = TRUE)
-jacc_mat<-as.matrix(chatau_jacc)
-plot(rowSums(jacc_mat))
-
-chatau_jacc
-
-df = mat_chatau
-a <- df %*% t(df)
-b <- df %*% (1 - t(df))
-c <- (1 - df) %*% t(df)
-d <- ncol(df) - a - b - c
-
-simi = a / (a+b+c)
-
-diag(simi) = 0
-
-plot(rowSums(simi))
-
-col_chatau<-rowSums(simi)
-chatau_sim<-cbind(chatauguay_sf,col_chatau)
-mapview(chatau_sim,zcol='col_chatau')
-
-
-
-##########
-#ennironmental data
-##########
-
-#saint-francois
-env_fr<-saint_francois_env[,-c(2,3)]
-
-
-
+chatau_jacc_comm<-similarity(chatau_comm_sf)
+mapview(chatau_jacc_comm,zcol='col',layer.name='Jaccard Similarity Index')
 
 
 
