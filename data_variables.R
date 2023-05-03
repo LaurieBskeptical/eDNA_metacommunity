@@ -41,13 +41,6 @@ dam_sf<- st_as_sf(x =dam_na,
 
 #mapview(saint_francois_sf,col.regions='red')+dam_sf
 
-#hydrography
-##for saint-francois river
-hydro_stf<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AF_GRP.gdb')
-
-##for chateauguay river
-hydro_chat<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AB.gdb')
-
 
 #unites de decoupage
 hydro_cut<-st_read('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/decoupage')
@@ -65,3 +58,45 @@ hydro_03_crs<-st_transform(hydro_03,4326)
 
 dam_zone<-st_intersection(dam_crs,hydro_03_crs)
 #mapview(dam_zone) #it works
+
+
+#############
+#hydrography
+#############
+
+#hydrography
+##for saint-francois river
+hydro_stf<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AF_GRP.gdb')
+hydro_stf<-st_as_sf(hydro_stf) #make it sf object
+
+##for chateauguay river
+hydro_chat<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AB.gdb')
+hydro_chat<-st_as_sf(hydro_chat) #make it sf object
+
+#extract st-francois of hydrography
+hydro_stf_buffer<-st_buffer(hydro_stf,25) #create 25m buffer around hydrography to include points
+
+##match geometry
+stf_sf_crs<-st_transform(saint_francois_sf,4326)
+hydrography_stf_crs<-st_transform(hydro_stf_buffer,4326)
+
+hydro_in_stf<-st_intersection(hydrography_stf_crs,stf_sf_crs) #to get strahler order
+
+#extract chateauguay of hydrography
+hydro_chat_buffer<-st_buffer(hydro_chat,25) #create 25m buffer around hydrography to include points
+
+chat_sf_crs<-st_transform(chatauguay_sf,4326)
+hydrography_chat_crs<-st_transform(hydro_chat_buffer,4326)
+
+hydro_in_chat<-st_intersection(hydrography_chat_crs,chat_sf_crs) #to get strahler order
+
+
+
+#######################
+#explanatory environmental variables
+#######################
+
+###############
+#Saint-Francois
+###############
+
