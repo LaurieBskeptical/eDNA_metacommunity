@@ -109,6 +109,12 @@ stf_env<-stf_env%>%rename( "Plantes"="Présence.de...plantes.",
                            "Habitat"="Type...d.habitat",
                            "O_Strahler"="O_STRAHLER")
 
+stf_env$O_Strahler<-as.factor(stf_env$O_Strahler)
+stf_env$Plantes<-as.factor(stf_env$Plantes)
+stf_env$Habitat<-as.factor(stf_env$Habitat)
+
+#saveRDS(stf_env,file='saint_francois_environmental_variables_final.RDS')
+
 ###############
 #Chateauguay
 ###############
@@ -119,4 +125,8 @@ chat_env<-chat_env%>%rename( "Plantes"="Présence.de...plantes.",
                            "Habitat"="Type...d.habitat",
                            "O_Strahler"="O_STRAHLER")
 
+chat_env$O_Strahler<-as.factor(chat_env$O_Strahler)
+chat_env$Plantes<-as.factor(chat_env$Plantes)
+chat_env$Habitat<-as.factor(chat_env$Habitat)
 
+#saveRDS(chat_env,file='chateauguay_environmental_variables_final.RDS')
