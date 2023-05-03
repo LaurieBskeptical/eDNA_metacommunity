@@ -9,6 +9,7 @@ library(rgdal)
 library(ade4)
 library(vegan)
 
+setwd('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/raw')
 #open saint_francois data
 saint_francois_data<-read_excel('Résultat_ADNe_Saint-François_2021_.xlsx',sheet='présence_absence')
 saint_francois_df<-as.data.frame(saint_francois_data)
@@ -32,26 +33,8 @@ saint_comm_sf <- st_as_sf(x =saint_francois_df[c(3:146),c(2,3,10:50)],
 #########
 #Jaccard
 #########
-similarity<-function(community_matrix){
-  ##TRANSFORM COMMUNITY DATA
-  comm<-st_drop_geometry(community_matrix) #drop sf from community matrix
-  vec<-as.vector(comm) 
-  mat<-do.call(cbind,vec) #bind all species columns together
-  class(mat)<-'numeric'
-  ##CALCULATE JACCARD SIMILARITY INDICE
-  a <- mat %*% t(mat)
-  b <- mat %*% (1 - t(mat))
-  c <- (1 - mat) %*% t(mat)
-  d <- ncol(mat) - a - b - c
-  
-  simi = a / (a+b+c)
-  
-  diag(simi) = 0
-  col<-rowSums(simi)
-  comm_sim<-cbind(community_matrix,col)
-  
-  return(comm_sim)
-}
+load('similarity_function.Rdata')
 
-saint_jacc_comm<-similarity(saint_comm_sf)
+
+saint_jacc_comm<-jaccard_similarity(saint_comm_sf)
 mapview(saint_jacc_comm,zcol='col',layer.name='Jaccard Similarity Index')
