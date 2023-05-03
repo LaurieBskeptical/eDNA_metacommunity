@@ -1,0 +1,193 @@
+---
+title: "variables_rmd"
+author: "Laurie Boulerice"
+date: "2023-05-03"
+output: html_document
+---
+
+Load libraries 
+```{r message=FALSE, warning=FALSE}
+library(readxl)
+library(mapview)
+library(sf)
+library(magrittr)
+library(stringr)
+library(dplyr)
+library(janitor)
+library(rgdal)
+library(ade4)
+library(vegan)
+```
+
+#Data zone
+I will use the zones delinieated by the government of Quebec to select data that are present in the zone where our rivers can be found. The shapefile of these zones can be found here : https://www.donneesquebec.ca/recherche/dataset/grhq . The whole hydrography can be downloaded here: https://mrnf.gouv.qc.ca/repertoire-geographique/reseau-hydrographique-grhq/ . 
+
+```{r}
+hydro_cut<-st_read('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/decoupage')
+
+```
+All the sampling was done in zone 03 which represents ID 1. I will then subset to only have a polygon of zone 3.
+```{r}
+hydro_03<-hydro_cut[hydro_cut$Bloc=='03',]
+
+```
+
+
+#Dams
+
+Load data 
+```{r}
+dam_raw <-
+  read_excel(
+    'C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/repertoire_des_barrages.xls'
+  )
+```
+
+There are 2 headers and the first one is not relevant so replace it for the second one
+```{r}
+dam<-janitor::row_to_names(dam_raw, 1, remove_rows_above = FALSE) 
+dam<-as.data.frame(dam) #turn into df
+```
+
+There are some NAs in the coordinates so remove them
+```{r}
+dam_na<-dam[!is.na(dam$`Latitude (NAD 83)`),]
+sum(is.na(dam_na$`Latitude (NAD 83)`)) #check if it works 
+```
+
+The NAs were removed, so I can now make it a spatial object
+```{r}
+dam_sf<- st_as_sf(x =dam_na, 
+                  coords = c("Longitude (NAD 83)","Latitude (NAD 83)"),
+                  crs = "+init=epsg:4269 +proj=longlat +ellps=GRS80 +datum=NAD83
++no_defs +towgs84=0,0,0
+") 
+```
+
+Use the data zone to cut the dams. 
+```{r}
+dam_crs<-st_transform(dam_sf,4326)
+hydro_03_crs<-st_transform(hydro_03,4326)
+
+dam_zone<-st_intersection(dam_crs,hydro_03_crs)
+```
+
+#Hydrography
+Hydrographic network was obtained here: https://www.donneesquebec.ca/recherche/dataset/grhq 
+
+##Saint-François River
+I first need to load the data and make it a sf object since it is a "SpatialLinesDataFrame"
+```{r}
+hydro_stf<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AF_GRP.gdb')
+hydro_stf<-st_as_sf(hydro_stf) #make it sf object
+```
+
+##Châteauguay River
+```{r}
+hydro_chat<-readOGR('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/hydro/GRHQ_03AB.gdb')
+hydro_chat<-st_as_sf(hydro_chat) #make it sf object
+
+```
+
+#Environmental variables 
+First I want to extract the Strahler order from the sampling stations. Since the points of the sampling stations are not intersecting exactly with the lines of the hydrographic network, I will create a large enough buffer around the hydrography network to include points inside (which is 25m for both rivers).
+
+##Saint-François River
+```{r}
+hydro_stf_buffer<-st_buffer(hydro_stf,25) #buffer of 25 m 
+```
+
+Load DNA data
+```{r}
+saint_francois_sf<-readRDS('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/saint_f_sf.rds')
+```
+
+Match geometry
+```{r}
+stf_sf_crs<-st_transform(saint_francois_sf,4326)
+hydrography_stf_crs<-st_transform(hydro_stf_buffer,4326)
+```
+Extract Strahler Order of sampling sites and save as RDS
+```{r eval=FALSE, echo=TRUE}
+hydro_in_stf<-st_intersection(hydrography_stf_crs,stf_sf_crs) 
+saveRDS(hydro_in_stf,'saint_francois_strahler.RDS')
+```
+
+```{r include=FALSE}
+hydro_in_stf<-readRDS('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/saint_francois_strahler.RDS')
+```
+
+There seems to have a problem with the hydrography network because some branches have a Strahler order of 0, which is not possible, and gives this value to our sampling sites. ***** Check later ******
+
+I can now subset the data to have the environmental variables we are interested in
+```{r}
+
+stf_env<-hydro_in_stf[,c(10,40:42)]
+##rename columns
+stf_env<-stf_env%>%rename( "Plantes"="Présence.de...plantes.",
+                           "Habitat"="Type...d.habitat",
+                           "O_Strahler"="O_STRAHLER")
+```
+Convert Strahler orders, presence of plants and habitat type to factors
+```{r}
+stf_env$O_Strahler<-as.factor(stf_env$O_Strahler)
+stf_env$Plantes<-as.factor(stf_env$Plantes)
+stf_env$Habitat<-as.factor(stf_env$Habitat)
+```
+Save file as RDS 
+
+##Châteauguay River
+
+Do the same for the Châteauguay River
+```{r}
+hydro_chat_buffer<-st_buffer(hydro_chat,25) #buffer of 25 m 
+```
+
+Load DNA data
+```{r}
+chatauguay_sf<-readRDS('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/chat_sf.rds')
+```
+
+Match geometry
+```{r}
+chat_sf_crs<-st_transform(chatauguay_sf,4326)
+hydrography_chat_crs<-st_transform(hydro_chat_buffer,4326)
+```
+Extract Strahler Order of sampling sites and save as RDS
+```{r eval=FALSE, echo=TRUE}
+hydro_in_chat<-st_intersection(hydrography_chat_crs,chat_sf_crs) 
+saveRDS(hydro_in_chat,'chateauguay_strahler.RDS')
+```
+
+```{r include=FALSE}
+hydro_in_chat<-readRDS('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/environment/chateauguay_strahler.RDS')
+```
+There seems to have a problem with the hydrography network because some branches have a Strahler order of 0, which is not possible, and gives this value to our sampling sites. ***** Check later ******
+
+I can now subset the data to have the environmental variables we are interested in
+```{r}
+
+chat_env<-hydro_in_chat[,c(10,40:42)]
+##rename columns
+chat_env<-chat_env%>%rename( "Plantes"="Présence.de...plantes.",
+                           "Habitat"="Type...d.habitat",
+                           "O_Strahler"="O_STRAHLER")
+```
+Convert Strahler orders, presence of plants and habitat type to factors
+```{r}
+chat_env$O_Strahler<-as.factor(chat_env$O_Strahler)
+chat_env$Plantes<-as.factor(chat_env$Plantes)
+chat_env$Habitat<-as.factor(chat_env$Habitat)
+```
+Save file as RDS 
+
+
+**The habitat variable contains lots of NA and is included as a level in the data frame 
+
+
+#Spatial Variables
+
+
+
+
+
