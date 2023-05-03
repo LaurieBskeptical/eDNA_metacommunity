@@ -80,7 +80,9 @@ hydro_stf_buffer<-st_buffer(hydro_stf,25) #create 25m buffer around hydrography 
 stf_sf_crs<-st_transform(saint_francois_sf,4326)
 hydrography_stf_crs<-st_transform(hydro_stf_buffer,4326)
 
-hydro_in_stf<-st_intersection(hydrography_stf_crs,stf_sf_crs) #to get strahler order
+hydro_in_stf<-st_intersection(hydrography_stf_crs,stf_sf_crs) #to get strahler order ##save it to RDS file
+
+#saveRDS(hydro_in_stf,file='saint_francois_strahler.RDS')
 
 #extract chateauguay of hydrography
 hydro_chat_buffer<-st_buffer(hydro_chat,25) #create 25m buffer around hydrography to include points
@@ -88,9 +90,9 @@ hydro_chat_buffer<-st_buffer(hydro_chat,25) #create 25m buffer around hydrograph
 chat_sf_crs<-st_transform(chatauguay_sf,4326)
 hydrography_chat_crs<-st_transform(hydro_chat_buffer,4326)
 
-hydro_in_chat<-st_intersection(hydrography_chat_crs,chat_sf_crs) #to get strahler order
+hydro_in_chat<-st_intersection(hydrography_chat_crs,chat_sf_crs) #to get strahler order #save in RDS file
 
-
+#saveRDS(hydro_in_chat,file='chateauguay_strahler.RDS')
 
 #######################
 #explanatory environmental variables
@@ -99,4 +101,22 @@ hydro_in_chat<-st_intersection(hydrography_chat_crs,chat_sf_crs) #to get strahle
 ###############
 #Saint-Francois
 ###############
+
+
+stf_env<-hydro_in_stf[,c(10,40:42)]
+##rename columns
+stf_env<-stf_env%>%rename( "Plantes"="Présence.de...plantes.",
+                           "Habitat"="Type...d.habitat",
+                           "O_Strahler"="O_STRAHLER")
+
+###############
+#Chateauguay
+###############
+
+chat_env<-hydro_in_chat[,c(10,40:42)]
+#rename columns
+chat_env<-chat_env%>%rename( "Plantes"="Présence.de...plantes.",
+                           "Habitat"="Type...d.habitat",
+                           "O_Strahler"="O_STRAHLER")
+
 
