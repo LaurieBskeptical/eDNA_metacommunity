@@ -8,6 +8,9 @@ library(janitor)
 library(rgdal)
 library(ade4)
 library(vegan)
+library(igraph)
+library(adespatial)
+library(spdep)
 
 
 ##########
@@ -130,3 +133,80 @@ chat_env$Plantes<-as.factor(chat_env$Plantes)
 chat_env$Habitat<-as.factor(chat_env$Habitat)
 
 #saveRDS(chat_env,file='chateauguay_environmental_variables_final.RDS')
+
+
+###################
+#spatial variables
+##################
+
+load("C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/code/tolerane_nb.Rdata")
+
+#################
+##Saint-Francois
+#################
+
+
+############
+#Chatauguay
+###########
+
+chatauguay_points<-chatauguay_df[c(3:60),c(1:3)]
+chatauguay_points_geom <- st_as_sf(x =chatauguay_points, 
+                                   coords = c("Longitude","Latitude"),
+                                   crs = "+proj=longlat +ellps=WGS84 +no_defs")
+
+tol = tolerance.nb(st_coordinates(chatauguay_points_geom),
+                   max.dist = 0.025,
+                   tolerance = 90, plot.sites = TRUE)
+
+plot(tol, st_coordinates(chatauguay_sf$geometry))
+
+tol_mat <- nb2mat(tol, style='B',zero.policy = TRUE)
+
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-49"),which(chatauguay_points[,1] == "BVCHA-50")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-48"),which(chatauguay_points[,1] == "BVCHA-53")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-57"),which(chatauguay_points[,1] == "BVCHA-55")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-43"),which(chatauguay_points[,1] == "BVCHA-40")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-41"),which(chatauguay_points[,1] == "BVCHA-40")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-33"),which(chatauguay_points[,1] == "BVCHA-40")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-33"),which(chatauguay_points[,1] == "BVCHA-41")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-35"),which(chatauguay_points[,1] == "BVCHA-36")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-37"),which(chatauguay_points[,1] == "BVCHA-36")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-12"),which(chatauguay_points[,1] == "BVCHA-27")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-13"),which(chatauguay_points[,1] == "BVCHA-16")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-9"),which(chatauguay_points[,1] == "BVCHA-11")] <- 0
+tol_mat[which(chatauguay_points[,1] == "	BVCHA-9"),which(chatauguay_points[,1] == "BVCHA-10")] <- 0
+
+tol_list <- mat2listw(tol_mat)
+tol_neighbours<-tol_list$neighbours
+
+##Moran's I positive and significant
+# Building AEMs
+Wdist <- 1/as.matrix(dist(chatauguay_points[,2:3]))
+AEM_Matrix <- aem.build.binary(nb.object=tol_neighbours, coords=cbind(1:nrow(chatauguay_points_geom),st_coordinates(chatauguay_points_geom[,2])),plot.connexions = TRUE)
+linkBase <- AEM_Matrix[[2]] #edge
+link <- linkBase[-which(linkBase[,1] == 0),]
+weight <- numeric()
+
+for(i in 1:nrow(link)){
+  weight[i] <- Wdist[link[i,1],link[i,2]]
+}
+
+AEM <- aem(AEM_Matrix, weight = weight, rm.link0 = TRUE)
+
+# Constructing asymmetric matrix
+matasym <- matrix(0,ncol=58, nrow=58)
+
+for(i in 1:nrow(link)){
+  matasym[link[i,1],link[i,2]]<- weight[i]
+}
+
+# Build a listw object from the asymmetric matrix
+listwAsym <- mat2listw(matasym)
+
+# Calculate Moran's I for AEM
+MoranIAEM <- moran.randtest(AEM$vectors, listwAsym, nrepet = 9999)
+
+#Positive Moran's I associated vectors
+chatauguay_spatial_vectors <- AEM$vectors[,which(MoranIAEM$obs>0 & MoranIAEM$adj.pvalue <= 0.05)]
+#saveRDS(chatauguay_spatial_vectors, file="chatauguay_spatial_vectors.RDS")
