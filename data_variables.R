@@ -149,15 +149,46 @@ load("C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/code/tol
 ############
 #Chatauguay
 ###########
-
+chatauguay_df<-readRDS('C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/chatau_df.RDS')
 chatauguay_points<-chatauguay_df[c(3:60),c(1:3)]
+row.names(chatauguay_points)<-1:58
 chatauguay_points_geom <- st_as_sf(x =chatauguay_points, 
                                    coords = c("Longitude","Latitude"),
                                    crs = "+proj=longlat +ellps=WGS84 +no_defs")
 
+chatau_clust<-hclust(dist(chatauguay_points[,2:3]),method = 'single')
+chatau_clust_gr<-cutree(chatau_clust,k=10)
+plot(chatauguay_points[,2:3],col=chatau_clust_gr)
+text(chatauguay_points$Latitude,chatauguay_points$Longitude,labels = 1:58,col=chatau_clust_gr)
+
+#create tolerance matrix
+tolerance_matrix <- function(whole,grp) {
+  link_mat <-
+    matrix(0,
+           ncol = length(whole) + 1,
+           nrow = length(whole) + 1)
+  for (i in 1:length(grp)) {
+    if (i + 1 > i) {
+      link_mat[i, i + 1] <- 1
+    } else {
+      link_mat[i, i + 1] <- 0
+    }
+  }
+  return(link_mat)
+}
+
+mat_gr1<-tolerance_matrix(whole = chatau_clust_gr,grp=chatau_clust_gr[which(chatau_clust_gr == 1)])
+
+adj_mat<-link_mat[-nrow(link_mat), -1]
+
+
+chatau_clust_gr[which(chatau_clust_gr == 1)]
+
+link_mat_chatau_gr1[-nrow(link_mat_chatau_gr1),-1]
+
 tol = tolerance.nb(st_coordinates(chatauguay_points_geom),
-                   max.dist = 0.025,
-                   tolerance = 90, plot.sites = TRUE)
+                   max.dist = 0.05,
+                   tolerance = 90, rot.angle = 180,plot.sites = TRUE)
 
 plot(tol, st_coordinates(chatauguay_sf$geometry))
 
