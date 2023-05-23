@@ -155,6 +155,7 @@ row.names(chatauguay_points)<-1:58
 chatauguay_points_geom <- st_as_sf(x =chatauguay_points, 
                                    coords = c("Longitude","Latitude"),
                                    crs = "+proj=longlat +ellps=WGS84 +no_defs")
+chatau_sf<-readRDS("C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/ADN/chat_sf.RDS")
 
 chatau_clust<-hclust(dist(chatauguay_points[,2:3]),method = 'single')
 chatau_clust_gr<-cutree(chatau_clust,k=10)
@@ -214,7 +215,7 @@ chatau_tol<-as.matrix(chatau_mat)
                   # max.dist = 0.05,
                   # tolerance = 90, rot.angle = 180,plot.sites = TRUE)
 
-plot(tol, st_coordinates(chatauguay_sf$geometry))
+plot(chatau_tol, st_coordinates(chatau_sf$geometry))
 
 tol_list <- mat2listw(chatau_tol)
 tol_neighbours<-tol_list$neighbours
@@ -222,7 +223,12 @@ tol_neighbours<-tol_list$neighbours
 ##Moran's I positive and significant
 # Building AEMs
 Wdist <- 1/as.matrix(dist(chatauguay_points[,2:3]))
-AEM_Matrix <- aem.build.binary(nb.object=tol_neighbours, coords=cbind(1:nrow(chatauguay_points_geom),st_coordinates(chatauguay_points_geom[,2])),plot.connexions = TRUE)
+
+site_base_chatau<-c(7,9,15,22,26,34,35,38,39,40,48,50,52,55,58)
+coord_aem<-cbind(1:nrow(chatauguay_points_geom),st_coordinates(chatauguay_points_geom[,2]))
+coord_aem[site_base_chatau,3]<-coord_aem[55,3]
+
+AEM_Matrix <- aem.build.binary(nb.object=tol_neighbours, coords=coord_aem,plot.connexions = TRUE)
 linkBase <- AEM_Matrix[[2]] #edge
 link <- linkBase[-which(linkBase[,1] == 0),]
 weight <- numeric()
@@ -247,5 +253,9 @@ listwAsym <- mat2listw(matasym)
 MoranIAEM <- moran.randtest(AEM$vectors, listwAsym, nrepet = 9999)
 
 #Positive Moran's I associated vectors
-chatauguay_spatial_vectors <- AEM$vectors[,which(MoranIAEM$obs>0 & MoranIAEM$adj.pvalue <= 0.05)]
+chatauguay_spatial_vectors <- AEM$vectors[,which(MoranIAEM$obs>0 & MoranIAEM$adj.pvalue <= 0.10)]
 saveRDS(chatauguay_spatial_vectors, file="chatauguay_spatial_vectors.RDS")
+
+library(ade4)
+
+s.value(st_coordinates(chatauguay_points_geom[,2]), chatauguay_spatial_vectors[,3],include.origin = FALSE)
