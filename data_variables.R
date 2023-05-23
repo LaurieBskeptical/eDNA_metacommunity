@@ -162,11 +162,11 @@ plot(chatauguay_points[,2:3],col=chatau_clust_gr)
 text(chatauguay_points$Latitude,chatauguay_points$Longitude,labels = 1:58,col=chatau_clust_gr)
 
 #create tolerance matrix
-tolerance_matrix <- function(whole,grp) {
+#tolerance_matrix <- function(whole,grp) {
   link_mat <-
     matrix(0,
-           ncol = length(whole) + 1,
-           nrow = length(whole) + 1)
+           ncol = length(grp) + 1,
+           nrow = length(grp) + 1)
   for (i in 1:length(grp)) {
     if (i + 1 > i) {
       link_mat[i, i + 1] <- 1
@@ -177,38 +177,46 @@ tolerance_matrix <- function(whole,grp) {
   return(link_mat)
 }
 
-mat_gr1<-tolerance_matrix(whole = chatau_clust_gr,grp=chatau_clust_gr[which(chatau_clust_gr == 1)])
+#tolerance_matrix_blob<- function(val,grp) {
+  link_mat <-
+    matrix(0,
+           ncol = length(val),
+           nrow = length(val) )
+  for (i in seq_along(val)) {
+    if (val[i+1] > val[i]) {
+      link_mat[val[i+1], val[i]] <- 1
+    } else {
+      link_mat[val[i+1], val[i]] <- 0
+    }
+  }
+  return(link_mat)
+  }
 
-adj_mat<-link_mat[-nrow(link_mat), -1]
 
+#blobbi<-tolerance_matrix_blob(val=bloob)
 
-chatau_clust_gr[which(chatau_clust_gr == 1)]
+#mat_gr1<-tolerance_matrix(whole = chatau_clust_gr,grp=chatau_clust_gr[which(chatau_clust_gr == 1)])
+#mat_1<-mat_gr1[-nrow(mat_gr1), -1]
+#colnames(mat_1)<-names(chatau_clust_gr[which(chatau_clust_gr == 1)])
 
-link_mat_chatau_gr1[-nrow(link_mat_chatau_gr1),-1]
+#adj_mat<-link_mat[-nrow(link_mat), -1]
 
-tol = tolerance.nb(st_coordinates(chatauguay_points_geom),
-                   max.dist = 0.05,
-                   tolerance = 90, rot.angle = 180,plot.sites = TRUE)
+chatauguay_mat <- read_csv("C:/Users/greco/OneDrive - USherbrooke/Maitrise/Projet de maitrise/data/chatauguay_mat.csv")
+chatau_mat<-chatauguay_mat[,-1]
+chatau_mat[is.na(chatau_mat)]<-0
+chatau_tol<-as.matrix(chatau_mat)
+
+#chatau_clust_gr[which(chatau_clust_gr == 1)]
+
+#link_mat_chatau_gr1[-nrow(link_mat_chatau_gr1),-1]
+
+#tol = tolerance.nb(st_coordinates(chatauguay_points_geom),
+                  # max.dist = 0.05,
+                  # tolerance = 90, rot.angle = 180,plot.sites = TRUE)
 
 plot(tol, st_coordinates(chatauguay_sf$geometry))
 
-tol_mat <- nb2mat(tol, style='B',zero.policy = TRUE)
-
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-49"),which(chatauguay_points[,1] == "BVCHA-50")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-48"),which(chatauguay_points[,1] == "BVCHA-53")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-57"),which(chatauguay_points[,1] == "BVCHA-55")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-43"),which(chatauguay_points[,1] == "BVCHA-40")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-41"),which(chatauguay_points[,1] == "BVCHA-40")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-33"),which(chatauguay_points[,1] == "BVCHA-40")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-33"),which(chatauguay_points[,1] == "BVCHA-41")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-35"),which(chatauguay_points[,1] == "BVCHA-36")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-37"),which(chatauguay_points[,1] == "BVCHA-36")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-12"),which(chatauguay_points[,1] == "BVCHA-27")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-13"),which(chatauguay_points[,1] == "BVCHA-16")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-9"),which(chatauguay_points[,1] == "BVCHA-11")] <- 0
-tol_mat[which(chatauguay_points[,1] == "	BVCHA-9"),which(chatauguay_points[,1] == "BVCHA-10")] <- 0
-
-tol_list <- mat2listw(tol_mat)
+tol_list <- mat2listw(chatau_tol)
 tol_neighbours<-tol_list$neighbours
 
 ##Moran's I positive and significant
@@ -240,4 +248,4 @@ MoranIAEM <- moran.randtest(AEM$vectors, listwAsym, nrepet = 9999)
 
 #Positive Moran's I associated vectors
 chatauguay_spatial_vectors <- AEM$vectors[,which(MoranIAEM$obs>0 & MoranIAEM$adj.pvalue <= 0.05)]
-#saveRDS(chatauguay_spatial_vectors, file="chatauguay_spatial_vectors.RDS")
+saveRDS(chatauguay_spatial_vectors, file="chatauguay_spatial_vectors.RDS")
