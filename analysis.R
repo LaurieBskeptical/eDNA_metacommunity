@@ -108,21 +108,28 @@ vp_chatau_Sp<-ifelse(vp_chatau_Sp<0,0,vp_chatau_Sp)
 
 ###For sites
 par(mfrow = c(1, 2))
-ggtern(data=as.data.frame(vp_chatau_site_clust),
+sites_chatau_plot<-ggtern(data=as.data.frame(vp_chatau_Site),
        aes(random, chatau_space_hmsc, chatau_env_hmsc)) +
   ggtitle("Sites rivière Châtauguay") +
   geom_point(colour = rgb(0, 0, 0, 0.5),
-             size = rowSums(vp_chatau_site_clust[,-4])* 200,show.legend=TRUE) +
+             aes(size = rowSums(vp_chatau_Site)*400)) +
   xlab("Co-Distribution") + ylab("Spatial") + zlab("Environnement")+
   theme_rgbw()
 
+
+sites_chatau_plot+ scale_size(name   = "R2",
+                         breaks = fivenum(rowSums(vp_chatau_Site)* 400),
+                         labels = fivenum(rowSums(vp_chatau_Site))) 
 #for species
 par(mfrow = c(2, 2))
-ggtern(data=as.data.frame(vp_chatau_Sp),
+sp_chatau_plot<-ggtern(data=as.data.frame(vp_chatau_Sp),
        aes(random, chatau_space_hmsc, chatau_env_hmsc)) +
-  ggtitle("Sp rivière Châtauguay") +
+  ggtitle("Espèces rivière Châtauguay") +
   geom_point(colour = rgb(0, 0, 0, 0.5),
-             size = rowSums(vp_chatau_Sp)* 10,show.legend=TRUE) +
+             aes(size = rowSums(vp_chatau_Sp)* 10)) +
   xlab("Co-Distribution") + ylab("Spatial") + zlab("Environnement")+
   theme_rgbw()
 
+sp_chatau_plot+ scale_size(name   = "R2",
+                                        breaks = fivenum(rowSums(vp_chatau_Sp)* 10),
+                                        labels = fivenum(rowSums(vp_chatau_Sp))) 
